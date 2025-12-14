@@ -361,7 +361,7 @@ Technical terms can include English in parentheses for clarity.
                     for position in positions
                 ]
 
-                batch_size = 5
+                batch_size = self.settings.portfolio_analysis_batch_size
                 for i in range(0, len(holdings_tasks), batch_size):
                     batch = holdings_tasks[i : i + batch_size]
                     results = await asyncio.gather(*batch, return_exceptions=True)
@@ -417,7 +417,7 @@ Technical terms can include English in parentheses for clarity.
                     for watchlist_item in unique_watchlist_items
                 ]
 
-                batch_size = 5
+                batch_size = self.settings.portfolio_analysis_batch_size
                 for i in range(0, len(watchlist_tasks), batch_size):
                     batch = watchlist_tasks[i : i + batch_size]
                     results = await asyncio.gather(*batch, return_exceptions=True)

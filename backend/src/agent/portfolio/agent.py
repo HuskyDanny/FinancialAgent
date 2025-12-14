@@ -340,6 +340,45 @@ class PortfolioAnalysisAgent(
                 result_summary=result_summary,
             )
 
+            # Check minimum success rate before Phase 2
+            # Calculate total symbols that should have been analyzed
+            position_symbols = {p.symbol for p in positions} if positions else set()
+            watchlist_symbols = (
+                {w.symbol for w in watchlist_items if w.symbol not in position_symbols}
+                if watchlist_items
+                else set()
+            )
+            total_symbols = len(position_symbols) + len(watchlist_symbols)
+
+            if total_symbols > 0 and not dry_run:
+                success_rate = len(all_analysis_results) / total_symbols
+                min_rate = self.settings.portfolio_analysis_min_success_rate
+
+                if success_rate < min_rate:
+                    error_msg = (
+                        f"Phase 1 success rate ({success_rate:.1%}) "
+                        f"below threshold ({min_rate:.0%})"
+                    )
+                    logger.warning(
+                        "Skipping Phase 2 due to low success rate",
+                        success_rate=success_rate,
+                        threshold=min_rate,
+                        successful=len(all_analysis_results),
+                        total=total_symbols,
+                    )
+                    result_summary["errors"].append(
+                        {"type": "low_success_rate", "message": error_msg}
+                    )
+
+                    # Store failure message in Portfolio Decisions chat
+                    await self._store_phase2_failure_message(
+                        reason=error_msg,
+                        success_rate=success_rate,
+                        successful_count=len(all_analysis_results),
+                        total_count=total_symbols,
+                    )
+                    return result_summary
+
             # ================================================================
             # PHASE 2: Portfolio Agent Decision (single holistic call)
             # ================================================================

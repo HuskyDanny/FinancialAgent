@@ -316,7 +316,19 @@ Include short reasoning (1-2 sentences) for each decision.
         Returns:
             Tuple of (decision_result, trading_decisions)
         """
-        if dry_run or not all_analysis_results or not portfolio_context:
+        if dry_run:
+            return None, []
+
+        if not all_analysis_results:
+            await self._store_phase2_failure_message(
+                reason="No symbol analyses available. Phase 1 may have failed completely.",
+            )
+            return None, []
+
+        if not portfolio_context:
+            await self._store_phase2_failure_message(
+                reason="Portfolio context unavailable. Failed to retrieve account information from Alpaca.",
+            )
             return None, []
 
         logger.info(
@@ -343,3 +355,74 @@ Include short reasoning (1-2 sentences) for each decision.
             )
 
         return decision_result, trading_decisions
+
+    async def _store_phase2_failure_message(
+        self,
+        reason: str,
+        success_rate: float | None = None,
+        successful_count: int | None = None,
+        total_count: int | None = None,
+    ) -> None:
+        """
+        Store a failure message when Phase 2 is skipped.
+
+        This creates a visible record in the Portfolio Decisions chat so users
+        can see why no trading decisions were made.
+
+        Args:
+            reason: Why Phase 2 was skipped
+            success_rate: Phase 1 success rate (if applicable)
+            successful_count: Number of successful analyses
+            total_count: Total symbols attempted
+        """
+        try:
+            chat_id = await self._get_portfolio_decisions_chat_id()
+
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            analysis_id = f"portfolio_failed_{timestamp}"
+
+            # Format failure message
+            message_content = "## ⚠️ Portfolio Analysis Failed\n\n"
+            message_content += (
+                f"**Date:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}\n"
+            )
+            message_content += "**Status:** Phase 2 Skipped\n\n"
+            message_content += f"### Reason\n\n{reason}\n\n"
+
+            if success_rate is not None:
+                message_content += "### Details\n\n"
+                message_content += f"- Success Rate: {success_rate:.1%}\n"
+                message_content += f"- Successful Analyses: {successful_count}\n"
+                message_content += f"- Total Symbols: {total_count}\n"
+
+            metadata = MessageMetadata(
+                symbol=None,
+                analysis_id=analysis_id,
+                analysis_type="portfolio",
+                raw_data={
+                    "status": "failed",
+                    "reason": reason,
+                    "success_rate": success_rate,
+                },
+            )
+
+            message_create = MessageCreate(
+                chat_id=chat_id,
+                role="assistant",
+                content=message_content,
+                source="system",
+                metadata=metadata,
+            )
+            await self.message_repo.create(message_create)
+
+            logger.info(
+                "Phase 2 failure message stored",
+                chat_id=chat_id,
+                reason=reason,
+            )
+
+        except Exception as e:
+            logger.error(
+                "Failed to store Phase 2 failure message",
+                error=str(e),
+            )

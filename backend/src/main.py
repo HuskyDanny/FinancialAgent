@@ -207,6 +207,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app.state.mongodb = mongodb
         app.state.redis = redis_cache
         app.state.market_service = market_service
+        app.state.alpaca_trading_service = alpaca_trading_service
 
         logger.info("Database connections started")
 

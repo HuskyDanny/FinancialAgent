@@ -117,6 +117,12 @@ class Settings(BaseSettings):
     # Kubernetes configuration
     kubernetes_namespace: str = "default"  # K8s namespace for metrics collection
 
+    # Portfolio Analysis settings
+    portfolio_analysis_batch_size: int = 5  # Concurrent symbol analysis batch size
+    portfolio_analysis_min_success_rate: float = (
+        0.7  # Min Phase 1 success rate for Phase 2
+    )
+
     @property
     def database_name(self) -> str:
         """Extract database name from MongoDB URL."""
