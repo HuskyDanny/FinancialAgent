@@ -2,11 +2,23 @@
 
 ## Overview
 
-This document describes the complete workflow for deploying code changes to the Financial Agent test environment on Azure Kubernetes Service (AKS).
+This document describes deployment workflows for the Financial Agent platform.
+
+> ⚠️ **Environment Status**:
+> - **Production (ACK)**: ✅ Active - https://klinecubic.cn - See [Production Deployment](#production-deployment-ack)
+> - **Test (AKS)**: 🚧 Planned - https://klinematrix.com - Not yet deployed
+
+**Current Workflow**: Local Development → Production (ACK)
+
+---
+
+## Test Environment (AKS) - PLANNED
+
+> **Note**: The test environment described below is **planned but not yet deployed**. For current deployments, skip to [Production Deployment](#production-deployment-ack).
 
 **Environment**: Test (`klinematrix-test` namespace)
-**Domain**: https://klinematrix.com
-**Users**: 10 beta testers
+**Domain**: https://klinematrix.com (not active)
+**Status**: 🚧 Planned
 
 ## Current Deployment Method: Manual
 

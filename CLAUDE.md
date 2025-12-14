@@ -223,7 +223,7 @@ source /tmp/webtesting/portfolio-analysis/venv/bin/activate  # Reuse it
 **Quick Reference**:
 ```bash
 # Build images → Update kustomization → Apply → Verify
-# Detailed steps: docs/deployment/k8s-operations.md
+# Detailed steps: docs/deployment/workflow.md
 ```
 
 **Key Rule**: Use `--load-restrictor=LoadRestrictionsNone` flag for kustomize (security restriction workaround)
