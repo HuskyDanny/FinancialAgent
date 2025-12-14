@@ -1,0 +1,14 @@
+{
+  "runId": "CviTA5gCC_",
+  "step": 4,
+  "type": "screenshot",
+  "name": "AAPL Individual Symbol Analysis (2025-12-13 10:06 UTC)",
+  "capturedAt": "2025-12-13T10:37:59.244Z",
+  "fileSize": 904796,
+  "metadata": {
+    "timestamp": "2025-12-13T10:06:04Z",
+    "analysis_id": "AAPL_holding_20251213_100604",
+    "source": "Holding",
+    "price": "$278.28"
+  }
+}

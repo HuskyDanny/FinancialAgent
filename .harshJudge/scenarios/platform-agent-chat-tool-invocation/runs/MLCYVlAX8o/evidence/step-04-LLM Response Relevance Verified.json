@@ -1,0 +1,21 @@
+LLM response is highly relevant to the question and tool results:
+
+✅ Stock Price Info (from Get Stock Quote):
+- Current price: $278.28
+- Change: +0.09%
+- Day high: $279.22, Day low: $276.82
+- Volume: ~39.53M shares
+- Market status: Closed (US market)
+
+✅ News Sentiment Info (from 新闻情绪分析):
+- 3 positive articles, 0 negative articles
+- News table with: Title, Source, Date, Sentiment Score, Key Points
+- Headlines about: Metaverse stocks, iPhone sales, Apple Manufacturing Academy
+- All sentiment scores positive (+0.45 to +0.52)
+
+✅ Comprehensive Analysis:
+- Short-term: Price stable above $278
+- Fundamentals: iPhone 17 sales + supply chain + manufacturing strategy
+- Risk factors: CPI data and Fed policy statements
+
+The response directly addresses both parts of the user's question (stock price AND recent news) with data from the invoked tools.

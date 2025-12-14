@@ -1,0 +1,27 @@
+{
+  "runId": "CviTA5gCC_",
+  "step": 1,
+  "type": "screenshot",
+  "name": "Portfolio Dashboard Loaded",
+  "capturedAt": "2025-12-13T10:05:53.902Z",
+  "fileSize": 575265,
+  "metadata": {
+    "holdings": [
+      "AAPL",
+      "BABA",
+      "CAT",
+      "GOOG",
+      "MSFT",
+      "SCCO",
+      "VRT"
+    ],
+    "watchlist": [
+      "TSLA",
+      "CRCL",
+      "CRWV",
+      "AAPL"
+    ],
+    "totalValue": "$112,540.86",
+    "analysisHistoryVisible": true
+  }
+}
