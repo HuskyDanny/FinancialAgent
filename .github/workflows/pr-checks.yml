@@ -90,7 +90,9 @@ jobs:
       - name: Install Frontend Dependencies
         run: |
           cd frontend
+          # Rebuild optional dependencies for Linux platform (CI runs on ubuntu)
           npm ci
+          npm rebuild
 
       - name: Run Backend Tests
         env:
