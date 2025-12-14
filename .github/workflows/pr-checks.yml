@@ -90,9 +90,10 @@ jobs:
       - name: Install Frontend Dependencies
         run: |
           cd frontend
-          # Rebuild optional dependencies for Linux platform (CI runs on ubuntu)
-          npm ci
-          npm rebuild
+          # Install dependencies - use npm install to ensure platform-specific optional deps
+          # are correctly resolved (npm ci can miss them due to cross-platform package-lock.json)
+          rm -rf node_modules
+          npm install --include=optional
 
       - name: Run Backend Tests
         env:
