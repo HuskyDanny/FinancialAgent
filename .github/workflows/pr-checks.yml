@@ -90,10 +90,11 @@ jobs:
       - name: Install Frontend Dependencies
         run: |
           cd frontend
-          # Install dependencies - use npm install to ensure platform-specific optional deps
-          # are correctly resolved (npm ci can miss them due to cross-platform package-lock.json)
-          rm -rf node_modules
-          npm install --include=optional
+          # Delete package-lock.json and node_modules to fix cross-platform rollup issue
+          # npm has a bug with optional dependencies when package-lock.json is from different platform
+          # See: https://github.com/npm/cli/issues/4828
+          rm -rf node_modules package-lock.json
+          npm install
 
       - name: Run Backend Tests
         env:
