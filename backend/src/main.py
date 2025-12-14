@@ -170,16 +170,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 tool_cache_wrapper=tool_cache_wrapper,
             )
 
-            # Load MCP tools asynchronously (118 tools from Alpha Vantage)
-            await react_agent.initialize_mcp_tools()
-
             # Store in app state for use in dependencies
             app.state.react_agent = react_agent
-            logger.info("ReAct agent initialized with MCP tools")
+            logger.info("ReAct agent initialized")
 
         except Exception as e:
             logger.warning(
-                "Failed to initialize ReAct agent with MCP tools - will use local tools only",
+                "Failed to initialize ReAct agent - will continue without agent",
                 error=str(e),
                 error_type=type(e).__name__,
             )
