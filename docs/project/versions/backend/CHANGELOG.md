@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.8] - 2025-12-13
+
+### Added
+- feat: add context compaction to chat API to prevent context window overflow
+
+
 ## [0.8.7] - 2025-12-13
 
 ### Added
