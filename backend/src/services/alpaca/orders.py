@@ -6,7 +6,6 @@ support for market, limit, stop, and stop-limit orders.
 """
 
 import structlog
-
 from alpaca.trading.enums import QueryOrderStatus
 from alpaca.trading.requests import (
     GetOrdersRequest,

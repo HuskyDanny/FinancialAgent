@@ -8,7 +8,6 @@ import asyncio
 from datetime import datetime
 
 import structlog
-
 from alpaca.trading.requests import GetPortfolioHistoryRequest
 
 from ...models.portfolio import PortfolioPosition, PortfolioSummary

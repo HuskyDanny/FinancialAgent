@@ -5,7 +5,6 @@ Provides initialization and client setup for Alpaca Paper Trading API.
 """
 
 import structlog
-
 from alpaca.trading.client import TradingClient
 
 from ...core.config import Settings
