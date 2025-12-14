@@ -1,7 +1,0 @@
-Phase 1: Symbol research completed (AAPL) - analysis_type=holding
-Phase 1 complete: analysis_results_count=1, holdings=1, total_analyzed=1
-Phase 2: Portfolio Agent making holistic decisions symbols_count=1
-Phase 2: Portfolio decisions completed - decisions_count=1, assessment: "no buying power, HOLD"
-Phase 2: Portfolio decision message stored - analysis_id=portfolio_AAPL_20251213_100700, chat_id=chat_ec03b463841d
-Phase 3: All decisions are HOLD - no orders to execute
-User portfolio analysis completed - decisions_made=1, orders_executed=0
