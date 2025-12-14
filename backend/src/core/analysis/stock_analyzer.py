@@ -36,7 +36,10 @@ class StockAnalyzer:
         Raises:
             NotImplementedError: Fundamentals analysis requires Alpha Vantage integration
         """
-        logger.info("Starting fundamentals analysis", symbol=symbol)
+        logger.warning(
+            "Fundamentals analysis not implemented - requires Alpha Vantage integration",
+            symbol=symbol,
+        )
         self.symbol = symbol.upper()
 
         # DISABLED: yfinance removed - requires Alpha Vantage fundamentals implementation
