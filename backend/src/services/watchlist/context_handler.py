@@ -98,7 +98,9 @@ class ContextHandler:
 
                 # Convert to conversation_history format
                 for msg in compacted_messages:
-                    conversation_history.append({"role": msg.role, "content": msg.content})
+                    conversation_history.append(
+                        {"role": msg.role, "content": msg.content}
+                    )
 
                 logger.info(
                     "Context compacted successfully",
@@ -112,7 +114,9 @@ class ContextHandler:
             else:
                 # No compaction needed - use full history
                 for msg in historical_messages:
-                    conversation_history.append({"role": msg.role, "content": msg.content})
+                    conversation_history.append(
+                        {"role": msg.role, "content": msg.content}
+                    )
 
                 logger.info(
                     "Using full conversation history",

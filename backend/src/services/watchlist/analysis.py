@@ -144,7 +144,9 @@ class AnalysisEngine:
             )
 
             # Parse agent response and create message
-            decision, position_size, response_text = self._parse_agent_response(response)
+            decision, position_size, response_text = self._parse_agent_response(
+                response
+            )
 
             # Create analysis message
             message = await self._create_analysis_message(
@@ -162,7 +164,13 @@ class AnalysisEngine:
             # Place order if decision is BUY or SELL
             if decision in ["BUY", "SELL"] and position_size and self.trading_service:
                 await self.order_handler.place_order(
-                    symbol, decision, position_size, analysis_id, chat_id, user_id, message
+                    symbol,
+                    decision,
+                    position_size,
+                    analysis_id,
+                    chat_id,
+                    user_id,
+                    message,
                 )
 
             return True
