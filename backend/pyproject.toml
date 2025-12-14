@@ -58,6 +58,7 @@ dev = [
     "mypy>=1.7.0",
     "pre-commit>=3.5.0",
     "httpx>=0.25.0",         # For testing async endpoints
+    "yfinance>=0.2.0",       # For yfinance integration tests (mocked)
 ]
 
 [tool.black]
