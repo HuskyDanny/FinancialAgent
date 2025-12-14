@@ -79,6 +79,13 @@ jobs:
         run: |
           cd backend
           pip install -e ".[dev]"
+          # Debug: Check package structure
+          echo "=== Checking package structure ==="
+          ls -la src/services/
+          ls -la src/services/market_data/ || echo "market_data not found"
+          python -c "import src; print('src imported:', src.__file__)"
+          python -c "import src.services; print('src.services imported:', src.services.__file__)"
+          python -c "from src.services.market_data import AlphaVantageMarketDataService; print('market_data imported successfully')"
 
       - name: Install Frontend Dependencies
         run: |
@@ -111,6 +118,7 @@ jobs:
           npm run type-check
 
   # 3. AI-powered PR description (runs parallel to tests)
+  # Note: Using coderabbitai for AI review - install via GitHub marketplace
   ai-summary:
     name: AI Summary
     needs: branch-policy
@@ -124,22 +132,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate PR Summary
-        uses: 57blocks/ai-powered-pr-description-generator@v1
-        with:
-          model: 'gemini'
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          prompt_template: |
-            You are a senior software engineer reviewing a pull request.
-            Analyze the changes and write a clear, technical PR description.
-
-            Format:
-            ## Summary
-            [2-3 bullet points explaining what changed and why]
-
-            ## Changes
-            [List of specific changes by file/component]
-
-            ## Testing
-            [How to test these changes]
+      - name: PR Summary Placeholder
+        run: |
+          echo "✅ AI Summary job completed"
+          echo ""
+          echo "For AI-powered PR reviews, consider installing:"
+          echo "- CodeRabbit: https://coderabbit.ai"
+          echo "- GitHub Copilot for PRs"
+          echo ""
+          echo "This placeholder ensures the workflow completes successfully."
