@@ -22,6 +22,7 @@ from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 
 from ..api.schemas.deep_agent_events import DeepEventEmitter
+from ..core.utils.token_utils import extract_token_usage_from_messages
 from .subagents import DeepSubAgent
 
 logger = structlog.get_logger()
@@ -176,7 +177,7 @@ async def invoke_subagent(
     config: RunnableConfig | None = None,
     emitter: DeepEventEmitter | None = None,
     on_event: Callable[[dict[str, Any]], None] | None = None,
-) -> tuple[str, int]:
+) -> tuple[str, int, int, int]:
     """Invoke a deep sub-agent with retry logic.
 
     Uses the pre-compiled deepagents graph directly instead of
@@ -192,8 +193,7 @@ async def invoke_subagent(
         on_event: Callback to emit events to the streaming layer
 
     Returns:
-        Tuple of (response_content, tool_count) where tool_count is the
-        number of tools actually invoked by the sub-agent.
+        Tuple of (response_content, tool_count, input_tokens, output_tokens).
     """
     subagent_name = subagent.config.name
 
@@ -270,7 +270,7 @@ async def invoke_subagent(
         msg = f"Subagent {subagent_name} returned no result"
         raise RuntimeError(msg)
 
-    # Extract final response and actual tool count
+    # Extract final response, tool count, and token usage
     all_messages = result.get("messages", [])
     final_message = all_messages[-1]
     response_content = (
@@ -282,12 +282,17 @@ async def invoke_subagent(
         1 for m in all_messages if m.__class__.__name__ == "ToolMessage"
     )
 
+    # Extract token usage from sub-agent messages for credit accounting
+    sa_input, sa_output, _ = extract_token_usage_from_messages(all_messages)
+
     logger.debug(
         "Subagent completed",
         subagent_name=subagent_name,
         response_length=len(response_content),
         total_messages=len(all_messages),
         tool_count=tool_count,
+        input_tokens=sa_input,
+        output_tokens=sa_output,
     )
 
-    return response_content, tool_count
+    return response_content, tool_count, sa_input, sa_output

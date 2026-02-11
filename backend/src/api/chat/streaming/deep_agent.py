@@ -274,14 +274,22 @@ async def stream_with_deep_agent(
                 answer_length=len(final_answer),
             )
 
-            # Token estimation fallback
+            # Fail transaction if no token usage extracted (matches V3 pattern)
             if input_tokens == 0 and output_tokens == 0:
-                logger.warning(
-                    "No token usage from deep agent — using estimate",
+                logger.error(
+                    "No token usage from deep agent — failing transaction",
                     chat_id=chat_id,
+                    trace_id=trace_id,
                 )
-                output_tokens = max(len(final_answer) // 4, 100)
-                input_tokens = output_tokens * 3
+                if transaction:
+                    await credit_service.fail_transaction(
+                        transaction.transaction_id
+                    )
+                yield create_error_event(
+                    "Failed to extract token usage from deep agent",
+                    "TOKEN_EXTRACTION_FAILED",
+                )
+                return
 
             # Tool info (batch mode only — streaming mode sends per-tool events)
             if tool_executions > 0 and not DEEP_STREAMING_V2:

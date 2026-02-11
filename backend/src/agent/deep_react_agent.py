@@ -173,8 +173,10 @@ class DeepReActAgent:
             ]
 
             reports: dict[str, str] = {}
+            cumulative_input_tokens = 0
+            cumulative_output_tokens = 0
             for subagent_key, prompt in research_tasks:
-                report, _ = await self._invoke_with_events(
+                report, _, sa_in, sa_out = await self._invoke_with_events(
                     subagents[subagent_key],
                     prompt,
                     config=config,
@@ -183,6 +185,8 @@ class DeepReActAgent:
                     emit_fn=_emit,
                 )
                 reports[subagent_key] = report
+                cumulative_input_tokens += sa_in
+                cumulative_output_tokens += sa_out
 
             # Emit synthesis start (signals sub-agents done, moving to debate)
             if emitter:
@@ -209,6 +213,8 @@ class DeepReActAgent:
                 "messages": [AIMessage(content=report, name="Researcher")],
                 "research_report": report,
                 "round_count": state.get("round_count", 0) + 1,
+                "subagent_input_tokens": state.get("subagent_input_tokens", 0) + cumulative_input_tokens,
+                "subagent_output_tokens": state.get("subagent_output_tokens", 0) + cumulative_output_tokens,
             }
 
         async def debate_node(state: dict, config: RunnableConfig) -> dict:
@@ -242,7 +248,7 @@ If after thorough review you genuinely have no concerns, respond with:
 "{TERMINATION_SIGNAL}"
 """
 
-            critique, _tool_count = await self._invoke_with_events(
+            critique, _tool_count, sa_in, sa_out = await self._invoke_with_events(
                 subagents["debater"],
                 critique_prompt,
                 config=config,
@@ -266,6 +272,8 @@ If after thorough review you genuinely have no concerns, respond with:
                 "messages": [AIMessage(content=critique, name="Debater")],
                 "round_count": round_count,  # Explicitly preserve to prevent state loss
                 "research_report": report,  # Prevent LangGraph state loss
+                "subagent_input_tokens": state.get("subagent_input_tokens", 0) + sa_in,
+                "subagent_output_tokens": state.get("subagent_output_tokens", 0) + sa_out,
             }
 
         async def rebuttal_node(state: dict, config: RunnableConfig) -> dict:
@@ -314,9 +322,11 @@ Respond with a structured defense addressing each concern point-by-point."""
             # Use financial sub-agent for evidence gathering (most fact-checking tools)
             defense_parts: list[str] = []
             total_tool_count = 0
+            rebuttal_input_tokens = 0
+            rebuttal_output_tokens = 0
 
             for subagent_key in ("financial",):
-                defense, actual_tool_count = await self._invoke_with_events(
+                defense, actual_tool_count, sa_in, sa_out = await self._invoke_with_events(
                     subagents[subagent_key],
                     rebuttal_prompt,
                     config=config,
@@ -328,6 +338,8 @@ Respond with a structured defense addressing each concern point-by-point."""
                 if defense:
                     defense_parts.append(defense)
                     total_tool_count += actual_tool_count
+                    rebuttal_input_tokens += sa_in
+                    rebuttal_output_tokens += sa_out
                 else:
                     logger.warning(
                         "Rebuttal sub-agent failed, continuing with partial defense",
@@ -364,6 +376,8 @@ Respond with a structured defense addressing each concern point-by-point."""
                 "messages": [AIMessage(content=combined_defense, name="Defender")],
                 "research_report": updated_report,
                 "round_count": round_count + 1,
+                "subagent_input_tokens": state.get("subagent_input_tokens", 0) + rebuttal_input_tokens,
+                "subagent_output_tokens": state.get("subagent_output_tokens", 0) + rebuttal_output_tokens,
             }
 
         def should_continue(state: dict) -> str:
@@ -464,6 +478,9 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
                 "messages": [AIMessage(content=verdict_text, name="Judge")],
                 "research_report": verdict_text,  # Becomes final_answer via adapter
                 "round_count": round_count,
+                # Pass through accumulated sub-agent tokens (LangGraph last-write-wins)
+                "subagent_input_tokens": state.get("subagent_input_tokens", 0),
+                "subagent_output_tokens": state.get("subagent_output_tokens", 0),
             }
 
         # Build graph
@@ -499,14 +516,14 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
         config: RunnableConfig | None = None,
         emitter: DeepEventEmitter | None = None,
         on_event: Callable[[dict[str, Any]], None] | None = None,
-    ) -> tuple[str, int]:
+    ) -> tuple[str, int, int, int]:
         """Invoke a deep sub-agent with retry logic.
 
         The sub-agent's deepagents graph already includes the LLM model,
         built-in tools, custom tools, and skills middleware.
 
         Returns:
-            Tuple of (response_content, tool_count).
+            Tuple of (response_content, tool_count, input_tokens, output_tokens).
         """
         return await invoke_subagent(
             subagent=subagent,
@@ -526,7 +543,7 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
         on_event: Callable[[dict[str, Any]], None] | None = None,
         emit_fn: Callable[[dict[str, Any]], None] | None = None,
         raise_on_error: bool = True,
-    ) -> tuple[str, int]:
+    ) -> tuple[str, int, int, int]:
         """Invoke a sub-agent with lifecycle event emission and timing.
 
         Wraps _invoke_subagent with the common pattern of:
@@ -542,7 +559,7 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
             raise_on_error: If True, re-raise exceptions after emitting error event
 
         Returns:
-            Tuple of (response_content, tool_count).
+            Tuple of (response_content, tool_count, input_tokens, output_tokens).
         """
         subagent_name = subagent.config.name
 
@@ -551,7 +568,7 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
 
         sa_start = time.perf_counter()
         try:
-            result, tool_count = await self._invoke_subagent(
+            result, tool_count, sa_input, sa_output = await self._invoke_subagent(
                 subagent, prompt, config=config, emitter=emitter, on_event=on_event,
             )
             sa_duration = int((time.perf_counter() - sa_start) * 1000)
@@ -564,7 +581,7 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
                     result_summary=result,
                     tool_count=tool_count,
                 ))
-            return result, tool_count
+            return result, tool_count, sa_input, sa_output
 
         except Exception as e:
             sa_duration = int((time.perf_counter() - sa_start) * 1000)
@@ -577,7 +594,7 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
                 ))
             if raise_on_error:
                 raise
-            return "", 0
+            return "", 0, 0, 0
 
     async def analyze(
         self,
@@ -668,9 +685,18 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
         duration_ms = int((time.perf_counter() - start_time) * 1000)
 
         all_messages = final_state.get("messages", [])
-        input_tokens, output_tokens, total_tokens = extract_token_usage_from_messages(
+        # Orchestrator token usage (from its own LLM calls: verdict, etc.)
+        orch_input, orch_output, _ = extract_token_usage_from_messages(
             all_messages
         )
+        # Sub-agent token usage (accumulated across research, debate, rebuttal nodes)
+        sa_input = final_state.get("subagent_input_tokens", 0)
+        sa_output = final_state.get("subagent_output_tokens", 0)
+
+        # Total = orchestrator + all sub-agents
+        input_tokens = orch_input + sa_input
+        output_tokens = orch_output + sa_output
+        total_tokens = input_tokens + output_tokens
 
         logger.info(
             "Analysis complete",
@@ -682,6 +708,8 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             total_tokens=total_tokens,
+            orchestrator_tokens=orch_input + orch_output,
+            subagent_tokens=sa_input + sa_output,
         )
 
         final_state["input_tokens"] = input_tokens
