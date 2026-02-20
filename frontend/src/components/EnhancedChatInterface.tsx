@@ -340,7 +340,10 @@ export function EnhancedChatInterface() {
 
       const olderMessages = chatDetail.messages.map(parseBackendMessage);
 
-      // Replay deep events from loaded messages (only if accordion not already loaded)
+      // Only replay deep events when the accordion is not already populated.
+      // Once a deep analysis accordion is loaded (status !== "pending"), we
+      // must NOT overwrite it with events from older paginated messages —
+      // that would replace the most-recent analysis with a stale one.
       if (deepState.status === "pending") {
         const hasDeep = replayDeepEvents(
           olderMessages,

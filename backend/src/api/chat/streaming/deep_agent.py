@@ -227,7 +227,10 @@ async def stream_with_deep_agent(
 
         except TimeoutError:
             logger.error("Deep agent timeout", chat_id=chat_id, timeout_seconds=480)
-            # Persist partial events even on timeout
+            # NOTE: We intentionally persist partial events BEFORE failing the
+            # transaction. The message record is independent of billing — it
+            # lets users see what the agent found before the timeout, and
+            # allows the accordion UI to restore partial progress on reload.
             if collected_events and transaction and chat_id:
                 try:
                     await chat_service.add_message(
@@ -274,9 +277,7 @@ async def stream_with_deep_agent(
                         },
                     )
                 except Exception:
-                    logger.warning(
-                        "Failed to persist partial deep events on error"
-                    )
+                    logger.warning("Failed to persist partial deep events on error")
             if transaction:
                 await credit_service.fail_transaction(transaction.transaction_id)
             yield create_error_event(f"Deep analysis failed: {e!s}", "AGENT_ERROR")
