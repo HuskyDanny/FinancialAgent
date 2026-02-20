@@ -258,6 +258,25 @@ async def stream_with_deep_agent(
                 error=str(e),
                 exc_info=True,
             )
+            # Persist partial deep events so accordion can be restored
+            if collected_events and transaction and chat_id:
+                try:
+                    await chat_service.add_message(
+                        chat_id=chat_id,
+                        user_id=user_id,
+                        role="assistant",
+                        content=f"Deep analysis encountered an error: {e!s}",
+                        source="llm",
+                        metadata={
+                            "agent_type": "deep_react",
+                            "transaction_id": transaction.transaction_id,
+                            "raw_data": {"deep_events": collected_events},
+                        },
+                    )
+                except Exception:
+                    logger.warning(
+                        "Failed to persist partial deep events on error"
+                    )
             if transaction:
                 await credit_service.fail_transaction(transaction.transaction_id)
             yield create_error_event(f"Deep analysis failed: {e!s}", "AGENT_ERROR")
