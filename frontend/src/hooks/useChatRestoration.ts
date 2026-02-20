@@ -4,8 +4,9 @@
  */
 
 import { useCallback } from "react";
-import type { ChatMessage, DeepStreamEvent } from "../types/api";
+import type { ChatMessage } from "../types/api";
 import type { TimeInterval } from "../services/market";
+import { parseBackendMessage } from "../utils/messageParser";
 
 interface ChatRestoreCallbacks {
   setMessages: (messages: ChatMessage[]) => void;
@@ -39,40 +40,8 @@ export function useChatRestoration(callbacks: ChatRestoreCallbacks) {
         const chatDetail = await chatService.getChatDetail(chatId, 50);
 
         // Convert backend Message[] to frontend ChatMessage[]
-        const restoredMessages: ChatMessage[] = chatDetail.messages.map(
-          (msg) => {
-            // Extract deep_events for accordion restore (before analysis_data to exclude it)
-            const deep_events = msg.metadata?.raw_data?.deep_events as
-              | DeepStreamEvent[]
-              | undefined;
-
-            // Unwrap from raw_data field with validation, excluding deep_events
-            let analysis_data: Record<string, unknown> | undefined = undefined;
-            if (
-              msg.metadata?.raw_data &&
-              Object.keys(msg.metadata.raw_data).length > 0
-            ) {
-              const rawData = msg.metadata.raw_data as Record<string, unknown>;
-              const filtered = Object.fromEntries(
-                Object.entries(rawData).filter(([key]) => key !== "deep_events"),
-              );
-              analysis_data = Object.keys(filtered).length > 0 ? filtered : undefined;
-            } else if (msg.metadata && Object.keys(msg.metadata).length > 0) {
-              analysis_data = msg.metadata as unknown as Record<
-                string,
-                unknown
-              >;
-            }
-
-            return {
-              role: msg.role as "user" | "assistant",
-              content: msg.content,
-              timestamp: msg.timestamp,
-              analysis_data,
-              deep_events,
-            };
-          },
-        );
+        const restoredMessages: ChatMessage[] =
+          chatDetail.messages.map(parseBackendMessage);
 
         // Restore messages
         setMessages(restoredMessages);
