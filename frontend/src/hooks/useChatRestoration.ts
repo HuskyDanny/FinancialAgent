@@ -4,7 +4,7 @@
  */
 
 import { useCallback } from "react";
-import type { ChatMessage } from "../types/api";
+import type { ChatMessage, DeepStreamEvent } from "../types/api";
 import type { TimeInterval } from "../services/market";
 
 interface ChatRestoreCallbacks {
@@ -41,13 +41,22 @@ export function useChatRestoration(callbacks: ChatRestoreCallbacks) {
         // Convert backend Message[] to frontend ChatMessage[]
         const restoredMessages: ChatMessage[] = chatDetail.messages.map(
           (msg) => {
-            // Unwrap from raw_data field with validation
+            // Extract deep_events for accordion restore (before analysis_data to exclude it)
+            const deep_events = msg.metadata?.raw_data?.deep_events as
+              | DeepStreamEvent[]
+              | undefined;
+
+            // Unwrap from raw_data field with validation, excluding deep_events
             let analysis_data: Record<string, unknown> | undefined = undefined;
             if (
               msg.metadata?.raw_data &&
               Object.keys(msg.metadata.raw_data).length > 0
             ) {
-              analysis_data = msg.metadata.raw_data as Record<string, unknown>;
+              const rawData = msg.metadata.raw_data as Record<string, unknown>;
+              const filtered = Object.fromEntries(
+                Object.entries(rawData).filter(([key]) => key !== "deep_events"),
+              );
+              analysis_data = Object.keys(filtered).length > 0 ? filtered : undefined;
             } else if (msg.metadata && Object.keys(msg.metadata).length > 0) {
               analysis_data = msg.metadata as unknown as Record<
                 string,
@@ -60,6 +69,7 @@ export function useChatRestoration(callbacks: ChatRestoreCallbacks) {
               content: msg.content,
               timestamp: msg.timestamp,
               analysis_data,
+              deep_events,
             };
           },
         );
@@ -121,6 +131,8 @@ export function useChatRestoration(callbacks: ChatRestoreCallbacks) {
           symbol: uiState.current_symbol,
           interval: uiState.current_interval,
         });
+
+        return restoredMessages;
       } catch (error) {
         console.error("❌ Failed to restore chat:", error);
 
@@ -138,6 +150,8 @@ export function useChatRestoration(callbacks: ChatRestoreCallbacks) {
         setCurrentSymbol("");
         setCurrentCompanyName("");
         setSelectedDateRange({ start: "", end: "" });
+
+        return undefined;
       }
     },
     [

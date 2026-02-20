@@ -259,20 +259,36 @@ export function EnhancedChatInterface() {
     async (chatId: string) => {
       // Prevent concurrent restoration requests
       if (isRestoringRef.current) {
-        console.log("⏭️ Skipping chat select: restoration in progress");
+        console.log("Skipping chat select: restoration in progress");
         return;
       }
 
       isRestoringRef.current = true;
       try {
-        await restoreChat(chatId);
-        // After restoration, assume there might be more messages (will hide button if none)
+        deepDispatch({ type: 'RESET' });
+
+        const restoredMessages = await restoreChat(chatId);
         setHasMoreMessages(true);
+
+        // Replay deep events from the most recent deep analysis message
+        if (restoredMessages) {
+          for (let i = restoredMessages.length - 1; i >= 0; i--) {
+            const msg = restoredMessages[i];
+            if (msg.deep_events && Array.isArray(msg.deep_events)) {
+              for (const event of msg.deep_events) {
+                const action = mapDeepEventToAction(event);
+                if (action) deepDispatch(action);
+              }
+              setAgentMode("v4-deep");
+              break;
+            }
+          }
+        }
       } finally {
         isRestoringRef.current = false;
       }
     },
-    [restoreChat],
+    [restoreChat, deepDispatch],
   );
 
   const handleNewChat = useCallback(() => {
@@ -290,50 +306,74 @@ export function EnhancedChatInterface() {
     if (!chatId || isLoadingMore) return;
 
     setIsLoadingMore(true);
+
+    // Capture scroll position BEFORE loading
+    const scrollContainer = document.querySelector('[data-chat-scroll]');
+    const prevScrollHeight = scrollContainer?.scrollHeight ?? 0;
+
     try {
-      // Import chatService dynamically
       const { chatService } = await import("../services/api");
-
-      // Calculate offset (current message count)
       const currentOffset = messages.length;
-
-      // Fetch next 50 messages
       const chatDetail = await chatService.getChatDetail(chatId, 50, currentOffset);
 
       if (chatDetail.messages.length === 0) {
-        // No more messages to load
         setHasMoreMessages(false);
         return;
       }
 
-      // Convert backend messages to frontend format
-      const olderMessages = chatDetail.messages.map((msg) => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content,
-        timestamp: msg.timestamp,
-        analysis_data: msg.metadata?.raw_data as Record<string, unknown> | undefined,
-        tool_call: msg.tool_call,
-      }));
+      const olderMessages = chatDetail.messages.map((msg) => {
+        const deep_events = msg.metadata?.raw_data?.deep_events as DeepStreamEvent[] | undefined;
+        // Exclude deep_events from analysis_data to avoid data duplication
+        let analysis_data: Record<string, unknown> | undefined = undefined;
+        if (msg.metadata?.raw_data) {
+          const rawData = msg.metadata.raw_data as Record<string, unknown>;
+          const filtered = Object.fromEntries(
+            Object.entries(rawData).filter(([key]) => key !== "deep_events"),
+          );
+          analysis_data = Object.keys(filtered).length > 0 ? filtered : undefined;
+        }
+        return {
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+          timestamp: msg.timestamp,
+          analysis_data,
+          tool_call: msg.tool_call,
+          deep_events,
+        };
+      });
 
-      // Prepend older messages to current messages
+      // Replay deep events from loaded messages (only if accordion not already loaded)
+      if (deepState.status === "pending") {
+        for (const msg of olderMessages) {
+          if (msg.deep_events && Array.isArray(msg.deep_events)) {
+            for (const event of msg.deep_events) {
+              const action = mapDeepEventToAction(event);
+              if (action) deepDispatch(action);
+            }
+            setAgentMode("v4-deep");
+            break;
+          }
+        }
+      }
+
       setMessages((prev) => [...olderMessages, ...prev]);
-
-      // Check if there might be even more messages
       setHasMoreMessages(chatDetail.messages.length === 50);
+
+      // Restore scroll position AFTER React renders new messages (double rAF ensures DOM flush)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (scrollContainer) {
+            const newScrollHeight = scrollContainer.scrollHeight;
+            scrollContainer.scrollTop += newScrollHeight - prevScrollHeight;
+          }
+        });
+      });
     } catch (error) {
-      console.error("❌ Failed to load more messages:", error);
-      setMessages((prev) => [
-        {
-          role: "assistant",
-          content: "⚠️ Failed to load older messages. Please try again.",
-          timestamp: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+      console.error("Failed to load more messages:", error);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [chatId, messages.length, isLoadingMore, setMessages]);
+  }, [chatId, messages.length, isLoadingMore, setMessages, deepDispatch, deepState.status]);
 
   return (
     <div className="bg-white overflow-hidden max-h-screen">
