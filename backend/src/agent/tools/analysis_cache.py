@@ -18,6 +18,7 @@ from functools import wraps
 from typing import Any
 
 import structlog
+from langchain_core.tools import StructuredTool
 
 logger = structlog.get_logger()
 
@@ -59,38 +60,21 @@ class AnalysisToolCache:
             key = cache._make_key(tool.name, kwargs)
             if key in cache._cache:
                 cache._hits += 1
+                logger.debug("Tool cache hit", tool=tool.name)
                 return cache._cache[key]
             cache._misses += 1
             result = await original_fn(**kwargs)
             cache._cache[key] = result
             return result
 
-        # Build a lightweight wrapper preserving tool metadata
-        wrapped = _CachedToolWrapper(
+        return StructuredTool(
             name=tool.name,
             description=tool.description,
             args_schema=tool.args_schema,
             coroutine=cached_invoke,
+            func=lambda **kwargs: None,  # sync stub; never called
         )
-        return wrapped
 
     def log_stats(self) -> None:
         """Log cache stats at end of analysis."""
         logger.info("Analysis tool cache stats", **self.stats)
-
-
-class _CachedToolWrapper:
-    """Minimal tool wrapper that satisfies deepagents' tool interface."""
-
-    def __init__(
-        self,
-        name: str,
-        description: str,
-        args_schema: Any,
-        coroutine: Callable,
-    ):
-        self.name = name
-        self.description = description
-        self.args_schema = args_schema
-        self.coroutine = coroutine
-        self.func = None  # deepagents checks this attribute

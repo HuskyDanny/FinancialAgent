@@ -53,88 +53,72 @@ def make_failing_tool(name: str, error: Exception):
 class TestAnalysisToolCache:
     """Tests for the per-analysis tool result cache."""
 
-    def test_cache_hit_same_inputs(self):
+    @pytest.mark.asyncio
+    async def test_cache_hit_same_inputs(self):
         """Calling the same tool with same inputs returns cached result."""
         cache = AnalysisToolCache()
         tool = make_mock_tool("get_overview", "overview data")
         wrapped = cache.wrap_tools([tool])
 
-        import asyncio
-
-        result1 = asyncio.get_event_loop().run_until_complete(
-            wrapped[0].coroutine(symbol="META")
-        )
-        result2 = asyncio.get_event_loop().run_until_complete(
-            wrapped[0].coroutine(symbol="META")
-        )
+        result1 = await wrapped[0].coroutine(symbol="META")
+        result2 = await wrapped[0].coroutine(symbol="META")
 
         assert result1 == "overview data"
         assert result2 == "overview data"
         assert tool.call_count["n"] == 1  # Only called once
 
-    def test_cache_miss_different_inputs(self):
+    @pytest.mark.asyncio
+    async def test_cache_miss_different_inputs(self):
         """Different inputs produce separate cache entries."""
         cache = AnalysisToolCache()
         tool = make_mock_tool("get_overview", "data")
         wrapped = cache.wrap_tools([tool])
 
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(wrapped[0].coroutine(symbol="META"))
-        asyncio.get_event_loop().run_until_complete(wrapped[0].coroutine(symbol="AAPL"))
+        await wrapped[0].coroutine(symbol="META")
+        await wrapped[0].coroutine(symbol="AAPL")
 
         assert tool.call_count["n"] == 2  # Called twice
 
-    def test_cache_miss_different_tools(self):
+    @pytest.mark.asyncio
+    async def test_cache_miss_different_tools(self):
         """Different tool names with same inputs are separate entries."""
         cache = AnalysisToolCache()
         tool_a = make_mock_tool("tool_a", "a")
         tool_b = make_mock_tool("tool_b", "b")
         wrapped = cache.wrap_tools([tool_a, tool_b])
 
-        import asyncio
-
-        r1 = asyncio.get_event_loop().run_until_complete(
-            wrapped[0].coroutine(symbol="META")
-        )
-        r2 = asyncio.get_event_loop().run_until_complete(
-            wrapped[1].coroutine(symbol="META")
-        )
+        r1 = await wrapped[0].coroutine(symbol="META")
+        r2 = await wrapped[1].coroutine(symbol="META")
 
         assert r1 == "a"
         assert r2 == "b"
         assert tool_a.call_count["n"] == 1
         assert tool_b.call_count["n"] == 1
 
-    def test_errors_not_cached(self):
+    @pytest.mark.asyncio
+    async def test_errors_not_cached(self):
         """Exceptions propagate and are not cached."""
         cache = AnalysisToolCache()
         tool = make_failing_tool("bad_tool", ValueError("API down"))
         wrapped = cache.wrap_tools([tool])
 
-        import asyncio
-
         with pytest.raises(ValueError, match="API down"):
-            asyncio.get_event_loop().run_until_complete(
-                wrapped[0].coroutine(symbol="META")
-            )
+            await wrapped[0].coroutine(symbol="META")
 
         # Stats should show miss but no hit
         assert cache.stats["hits"] == 0
         assert cache.stats["misses"] == 1
 
-    def test_stats_tracking(self):
+    @pytest.mark.asyncio
+    async def test_stats_tracking(self):
         """Cache tracks hit/miss counts and hit rate."""
         cache = AnalysisToolCache()
         tool = make_mock_tool("overview", "data")
         wrapped = cache.wrap_tools([tool])
 
-        import asyncio
-
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(wrapped[0].coroutine(symbol="META"))  # miss
-        loop.run_until_complete(wrapped[0].coroutine(symbol="META"))  # hit
-        loop.run_until_complete(wrapped[0].coroutine(symbol="AAPL"))  # miss
+        await wrapped[0].coroutine(symbol="META")  # miss
+        await wrapped[0].coroutine(symbol="META")  # hit
+        await wrapped[0].coroutine(symbol="AAPL")  # miss
 
         assert cache.stats == {"hits": 1, "misses": 2, "hit_rate": "33.3%"}
 
@@ -152,16 +136,14 @@ class TestAnalysisToolCache:
         cache = AnalysisToolCache()
         assert cache.wrap_tools([]) == []
 
-    def test_key_normalization_dict_order(self):
+    @pytest.mark.asyncio
+    async def test_key_normalization_dict_order(self):
         """Different dict key ordering produces the same cache key."""
         cache = AnalysisToolCache()
         tool = make_mock_tool("financials", "data")
         wrapped = cache.wrap_tools([tool])
 
-        import asyncio
-
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(wrapped[0].coroutine(symbol="META", period="quarter"))
-        loop.run_until_complete(wrapped[0].coroutine(period="quarter", symbol="META"))
+        await wrapped[0].coroutine(symbol="META", period="quarter")
+        await wrapped[0].coroutine(period="quarter", symbol="META")
 
         assert tool.call_count["n"] == 1  # Same key despite arg order
