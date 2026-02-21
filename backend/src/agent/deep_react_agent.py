@@ -30,6 +30,7 @@ from .subagents.debater import TERMINATION_SIGNAL, create_debater_subagent
 from .subagents.financial import create_financial_subagent
 from .subagents.news import create_news_subagent
 from .subagents.technical import create_technical_subagent
+from .tools.analysis_cache import AnalysisToolCache
 from .tools.categorization import get_all_tools_dict
 
 logger = structlog.get_logger()
@@ -104,17 +105,25 @@ class DeepReActAgent:
             total_tools=len(tools),
         )
 
-    def _create_subagents(self, context: AgentContext) -> dict[str, Any]:
-        """Create all sub-agents with context.
-
-        Each sub-agent is a DeepSubAgent wrapping a deepagents compiled graph
-        with domain-specific tools and SKILL.md files.
-        """
+    def _create_subagents(
+        self,
+        context: AgentContext,
+        cache: AnalysisToolCache | None = None,
+    ) -> dict[str, Any]:
+        """Create all sub-agents with context and optional tool cache."""
         return {
-            "technical": create_technical_subagent(self.tools_dict, self.llm, context),
-            "news": create_news_subagent(self.tools_dict, self.llm, context),
-            "financial": create_financial_subagent(self.tools_dict, self.llm, context),
-            "debater": create_debater_subagent(self.tools_dict, self.llm, context),
+            "technical": create_technical_subagent(
+                self.tools_dict, self.llm, context, cache=cache
+            ),
+            "news": create_news_subagent(
+                self.tools_dict, self.llm, context, cache=cache
+            ),
+            "financial": create_financial_subagent(
+                self.tools_dict, self.llm, context, cache=cache
+            ),
+            "debater": create_debater_subagent(
+                self.tools_dict, self.llm, context, cache=cache
+            ),
         }
 
     def _build_workflow(
@@ -130,7 +139,8 @@ class DeepReActAgent:
             emitter: Event emitter for sequenced event creation
             on_event: Callback to emit events to the streaming layer
         """
-        subagents = self._create_subagents(context)
+        self._analysis_cache = AnalysisToolCache()
+        subagents = self._create_subagents(context, cache=self._analysis_cache)
 
         def _emit(event: dict[str, Any]) -> None:
             """Safely emit an event via callback."""
@@ -668,6 +678,8 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
 
         try:
             final_state = await workflow.ainvoke(initial_state, config=config)
+            if self._analysis_cache:
+                self._analysis_cache.log_stats()
         except Exception as e:
             duration_ms = int((time.perf_counter() - start_time) * 1000)
             logger.error(
