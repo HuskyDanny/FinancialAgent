@@ -98,6 +98,8 @@ class DeepReActAgent:
             request_timeout=30,
         )
 
+        self._analysis_cache: AnalysisToolCache | None = None
+
         logger.info(
             "DeepReActAgent initialized",
             enable_debate=enable_debate,
@@ -678,8 +680,6 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
 
         try:
             final_state = await workflow.ainvoke(initial_state, config=config)
-            if self._analysis_cache:
-                self._analysis_cache.log_stats()
         except Exception as e:
             duration_ms = int((time.perf_counter() - start_time) * 1000)
             logger.error(
@@ -690,6 +690,9 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
                 duration_ms=duration_ms,
             )
             raise
+        finally:
+            if self._analysis_cache:
+                self._analysis_cache.log_stats()
 
         duration_ms = int((time.perf_counter() - start_time) * 1000)
 
