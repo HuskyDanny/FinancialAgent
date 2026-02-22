@@ -98,8 +98,6 @@ class DeepReActAgent:
             request_timeout=30,
         )
 
-        self._analysis_cache: AnalysisToolCache | None = None
-
         logger.info(
             "DeepReActAgent initialized",
             enable_debate=enable_debate,
@@ -131,6 +129,7 @@ class DeepReActAgent:
     def _build_workflow(
         self,
         context: AgentContext,
+        cache: AnalysisToolCache,
         emitter: DeepEventEmitter | None = None,
         on_event: Callable[[dict[str, Any]], None] | None = None,
     ) -> StateGraph:
@@ -138,11 +137,11 @@ class DeepReActAgent:
 
         Args:
             context: Agent context with session parameters
+            cache: Per-analysis tool result cache (created in analyze())
             emitter: Event emitter for sequenced event creation
             on_event: Callback to emit events to the streaming layer
         """
-        self._analysis_cache = AnalysisToolCache()
-        subagents = self._create_subagents(context, cache=self._analysis_cache)
+        subagents = self._create_subagents(context, cache=cache)
 
         def _emit(event: dict[str, Any]) -> None:
             """Safely emit an event via callback."""
@@ -629,7 +628,10 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
         )
 
         emitter = DeepEventEmitter() if on_event else None
-        workflow = self._build_workflow(context, emitter=emitter, on_event=on_event)
+        analysis_cache = AnalysisToolCache()
+        workflow = self._build_workflow(
+            context, cache=analysis_cache, emitter=emitter, on_event=on_event
+        )
 
         config = RunnableConfig(
             configurable=context.to_dict(),
@@ -691,8 +693,7 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
             )
             raise
         finally:
-            if self._analysis_cache:
-                self._analysis_cache.log_stats()
+            analysis_cache.log_stats()
 
         duration_ms = int((time.perf_counter() - start_time) * 1000)
 
