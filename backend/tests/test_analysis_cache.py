@@ -96,17 +96,22 @@ class TestAnalysisToolCache:
 
     @pytest.mark.asyncio
     async def test_errors_not_cached(self):
-        """Exceptions propagate and are not cached."""
+        """Exceptions propagate and are not cached on retry."""
         cache = AnalysisToolCache()
         tool = make_failing_tool("bad_tool", ValueError("API down"))
         wrapped = cache.wrap_tools([tool])
 
+        # First call should raise and not be cached
         with pytest.raises(ValueError, match="API down"):
             await wrapped[0].coroutine(symbol="META")
 
-        # Stats should show miss but no hit
+        # Second identical call should also raise (error not cached)
+        with pytest.raises(ValueError, match="API down"):
+            await wrapped[0].coroutine(symbol="META")
+
+        # Two misses, zero hits — confirms errors are never cached
         assert cache.stats["hits"] == 0
-        assert cache.stats["misses"] == 1
+        assert cache.stats["misses"] == 2
 
     @pytest.mark.asyncio
     async def test_stats_tracking(self):
