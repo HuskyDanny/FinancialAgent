@@ -458,7 +458,12 @@ If after thorough review you genuinely have no concerns, respond with:
 
         # ── should_continue ──────────────────────────────────────────────
         def should_continue(state: dict) -> str:
-            """Determine if debate should continue based on debater output."""
+            """Determine if debate should continue based on debater output.
+
+            Returns "continue" for normal rounds, "final_rebuttal" when max
+            rounds reached but debater still has concerns (ensures symmetric
+            defense-before-verdict), or "end" when debater is satisfied.
+            """
             round_count = state.get("round_count", 1)
             debate_active = state.get("debate_active", True)
 
@@ -467,11 +472,27 @@ If after thorough review you genuinely have no concerns, respond with:
                 return "end"
 
             if round_count >= self.max_debate_rounds:
-                logger.info("Max debate rounds reached", rounds=round_count)
-                return "end"
+                logger.info(
+                    "Max debate rounds reached, routing to final rebuttal",
+                    rounds=round_count,
+                )
+                return "final_rebuttal"
 
             logger.info("Continuing debate", round=round_count + 1)
             return "continue"
+
+        def after_main_agent(state: dict) -> str:
+            """Route main_agent output to debate or verdict.
+
+            After the initial research (round_count=1), always go to debate.
+            After a final rebuttal (round_count >= max), go directly to verdict
+            to preserve symmetry: defense always responds before verdict.
+            """
+            round_count = state.get("round_count", 0)
+            if round_count >= self.max_debate_rounds:
+                logger.info("Final rebuttal complete, proceeding to verdict")
+                return "verdict"
+            return "debate"
 
         # ── verdict_node ─────────────────────────────────────────────────
         async def verdict_node(state: dict, config: RunnableConfig) -> dict:
@@ -560,13 +581,21 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
             builder.add_node("debate", debate_node)
             builder.add_node("verdict", verdict_node)
             builder.add_edge(START, "main_agent")
-            builder.add_edge("main_agent", "debate")
+            builder.add_conditional_edges(
+                "main_agent",
+                after_main_agent,
+                {
+                    "debate": "debate",  # Normal flow: research/rebuttal → debate
+                    "verdict": "verdict",  # Final rebuttal complete → verdict
+                },
+            )
             builder.add_conditional_edges(
                 "debate",
                 should_continue,
                 {
                     "continue": "main_agent",  # Rebuttal with evidence
-                    "end": "verdict",  # Final synthesis with verified facts
+                    "final_rebuttal": "main_agent",  # Last rebuttal before verdict
+                    "end": "verdict",  # Debater satisfied, no concerns
                 },
             )
             builder.add_edge("verdict", END)

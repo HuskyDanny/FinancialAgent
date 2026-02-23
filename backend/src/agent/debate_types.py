@@ -81,7 +81,10 @@ def parse_debater_output(response: str) -> DebaterOutput:
     """Parse debater's response into structured concerns."""
     from .subagents.debater import TERMINATION_SIGNAL
 
-    if TERMINATION_SIGNAL in response:
+    # Strict match: signal must appear on its own line (not embedded in analysis)
+    # to avoid false termination when LLM quotes the signal alongside concerns
+    response_lines = [line.strip() for line in response.strip().splitlines()]
+    if TERMINATION_SIGNAL in response_lines:
         return DebaterOutput(terminated=True, raw_text=response)
 
     data = _extract_json_block(response)

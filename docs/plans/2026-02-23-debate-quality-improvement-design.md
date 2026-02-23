@@ -143,7 +143,8 @@ After the final debate+rebuttal cycle, the outer graph merges concerns and rebut
 
 ### Removed from All Sub-Agents
 
-- `read_file`, `write_file`, `edit_file`, `ls`, `glob`, `grep` (filesystem tools — useless, caused wasted calls)
+- `write_file`, `edit_file`, `ls`, `glob`, `grep` (filesystem write/edit/list/search tools — removed as they caused wasted calls)
+- `read_file` remains available for controlled SKILL.md access via deepagents `FilesystemBackend(virtual_mode=True)`
 
 ### Sub-Agent Tool Assignments
 
