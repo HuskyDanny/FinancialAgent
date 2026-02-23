@@ -66,15 +66,14 @@ def _extract_json_block(text: str) -> dict | None:
         except json.JSONDecodeError:
             pass
 
-    # Fallback: try to find raw JSON object
-    for start in range(len(text)):
-        if text[start] == "{":
-            for end in range(len(text), start, -1):
-                if text[end - 1] == "}":
-                    try:
-                        return json.loads(text[start:end])
-                    except json.JSONDecodeError:
-                        continue
+    # Fallback: try outermost { ... } in the text (O(1) parse attempts)
+    first_brace = text.find("{")
+    last_brace = text.rfind("}")
+    if first_brace != -1 and last_brace > first_brace:
+        try:
+            return json.loads(text[first_brace : last_brace + 1])
+        except json.JSONDecodeError:
+            pass
     return None
 
 
