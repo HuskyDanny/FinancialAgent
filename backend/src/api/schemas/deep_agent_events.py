@@ -205,6 +205,8 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "get_put_call_ratio": "Put/Call Ratio",
     "get_copper_commodity": "Commodity Prices",
     "read_file": "Read Skill File",
+    "fetch_yfinance_news": "Yahoo Finance News",
+    "search_web_exa": "Web Search (Exa)",
 }
 
 
