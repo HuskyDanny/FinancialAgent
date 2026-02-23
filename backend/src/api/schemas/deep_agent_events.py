@@ -340,6 +340,7 @@ class DeepEventEmitter:
         current_round: int,
         has_concerns: bool,
         summary: str = "",
+        concerns: list[dict] | None = None,
     ) -> dict[str, Any]:
         """Create a deep_debate_round event."""
         return {
@@ -347,6 +348,7 @@ class DeepEventEmitter:
             "round": current_round,
             "has_concerns": has_concerns,
             "summary": summary,
+            "concerns": concerns or [],
         }
 
     def rebuttal_start(self, current_round: int) -> dict[str, Any]:
@@ -362,6 +364,7 @@ class DeepEventEmitter:
         defense_summary: str,
         tool_count: int,
         duration_ms: int,
+        rebuttals: list[dict] | None = None,
     ) -> dict[str, Any]:
         """Create a deep_rebuttal_result event."""
         return {
@@ -370,6 +373,7 @@ class DeepEventEmitter:
             "defense_summary": defense_summary,
             "tool_count": tool_count,
             "duration_ms": duration_ms,
+            "rebuttals": rebuttals or [],
         }
 
     def synthesis_start(self) -> dict[str, Any]:
