@@ -109,5 +109,38 @@ def create_deep_subagent(
     return DeepSubAgent(config=config, graph=graph, tool_names=tool_names)
 
 
+def create_subagent_dict(
+    config: SubAgentConfig,
+    tools: list[Callable],
+    skills_dir: str,
+) -> dict[str, Any]:
+    """Create a SubAgent dictionary for deepagents create_deep_agent(subagents=...).
+
+    Unlike create_deep_subagent which compiles a full graph, this returns
+    a dict compatible with the deepagents SubAgent TypedDict pattern.
+    Useful when the orchestrator agent delegates via the `task` tool.
+
+    Args:
+        config: SubAgentConfig with name, description, system prompt
+        tools: List of domain-specific tool functions
+        skills_dir: Path to the skills directory for this domain
+
+    Returns:
+        SubAgent dict for deepagents create_deep_agent(subagents=...)
+    """
+    return {
+        "name": config.name,
+        "description": config.description,
+        "system_prompt": config.system_prompt,
+        "tools": tools,
+        "skills": [skills_dir],
+    }
+
+
 # Re-export for convenience
-__all__ = ["DeepSubAgent", "SubAgentConfig", "create_deep_subagent"]
+__all__ = [
+    "DeepSubAgent",
+    "SubAgentConfig",
+    "create_deep_subagent",
+    "create_subagent_dict",
+]
