@@ -34,7 +34,9 @@ const formatTimestamp = (timestamp: string) => {
 };
 
 // Parse thinking content from message
-const parseThinkingContent = (content: string): { thinking: string[]; mainContent: string } => {
+const parseThinkingContent = (
+  content: string,
+): { thinking: string[]; mainContent: string } => {
   const thinkingRegex = /<thinking>(.*?)<\/thinking>/gs;
   const thinkingMatches: string[] = [];
   let match;
@@ -44,7 +46,7 @@ const parseThinkingContent = (content: string): { thinking: string[]; mainConten
   }
 
   // Remove thinking tags from main content
-  const mainContent = content.replace(thinkingRegex, '').trim();
+  const mainContent = content.replace(thinkingRegex, "").trim();
 
   return {
     thinking: thinkingMatches,
@@ -53,7 +55,10 @@ const parseThinkingContent = (content: string): { thinking: string[]; mainConten
 };
 
 // Memoized message component to prevent re-renders
-const MessageBubble = React.memo<{ msg: ChatMessage; t: (key: string, options?: Record<string, unknown>) => string }>(({ msg, t }) => {
+const MessageBubble = React.memo<{
+  msg: ChatMessage;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}>(({ msg, t }) => {
   // Memoize thinking content parsing to avoid re-parsing on every render
   const { thinking, mainContent } = useMemo(() => {
     return msg.role === "assistant"
@@ -76,15 +81,31 @@ const MessageBubble = React.memo<{ msg: ChatMessage; t: (key: string, options?: 
         {thinking.length > 0 && (
           <details className="mb-3 group">
             <summary className="cursor-pointer select-none px-3 py-2 flex items-center gap-2 bg-blue-50/60 hover:bg-blue-50 rounded-lg border border-blue-200/50 transition-colors">
-              <svg className="w-4 h-4 text-blue-600 flex-shrink-0 group-open:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4 text-blue-600 flex-shrink-0 group-open:rotate-90 transition-transform"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
-              <span className="text-xs font-medium text-blue-700">{t('chat:message.thinkingProcess')}</span>
-              <span className="text-xs text-blue-600/70 ml-auto">{t('chat:message.thinkingChars', { count: thinking.join('').length })}</span>
+              <span className="text-xs font-medium text-blue-700">
+                {t("chat:message.thinkingProcess")}
+              </span>
+              <span className="text-xs text-blue-600/70 ml-auto">
+                {t("chat:message.thinkingChars", {
+                  count: thinking.join("").length,
+                })}
+              </span>
             </summary>
             <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
               <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
-{thinking.join('\n\n')}
+                {thinking.join("\n\n")}
               </pre>
             </div>
           </details>
@@ -238,7 +259,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   sortOrder = "oldest", // Default to oldest first (chronological) for chat messages
   deepAccordion,
 }) => {
-  const { t } = useTranslation(['chat', 'common']);
+  const { t } = useTranslation(["chat", "common"]);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -256,7 +277,9 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     // Detect chat change by checking if first message ID changed
     const firstMessageId = String(messages[0]._id || messages[0].timestamp);
-    const isChatChange = firstMessageIdRef.current !== null && firstMessageIdRef.current !== firstMessageId;
+    const isChatChange =
+      firstMessageIdRef.current !== null &&
+      firstMessageIdRef.current !== firstMessageId;
 
     if (isChatChange) {
       lastScrolledUserMessageRef.current = null;
@@ -278,12 +301,13 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
       if (lastScrolledUserMessageRef.current === null) {
         const SCROLL_DELAY_MS = 100;
         const timeoutId = setTimeout(() => {
-          const messagesContainer = messagesEndRef.current?.closest('.overflow-y-auto');
+          const messagesContainer =
+            messagesEndRef.current?.closest(".overflow-y-auto");
           if (messagesContainer) {
             messagesContainer.scrollTop = 0;
           }
         }, SCROLL_DELAY_MS);
-        lastScrolledUserMessageRef.current = 'no-user-messages';
+        lastScrolledUserMessageRef.current = "no-user-messages";
 
         return () => clearTimeout(timeoutId);
       }
@@ -296,15 +320,22 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     );
 
     // Check if this is a chat restoration (no previous scroll tracking)
-    const isRestoringChat = lastScrolledUserMessageRef.current === null && messages.length > 1;
+    const isRestoringChat =
+      lastScrolledUserMessageRef.current === null && messages.length > 1;
 
     if (isRestoringChat) {
       // On chat restoration: scroll to last USER message to see what was asked
-      lastUserMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      lastUserMessageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
       lastScrolledUserMessageRef.current = userMessageId;
     } else if (lastScrolledUserMessageRef.current !== userMessageId) {
       // On new user message: scroll to show that message at the start
-      lastUserMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      lastUserMessageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
       lastScrolledUserMessageRef.current = userMessageId;
     }
   }, [messages]);
@@ -322,14 +353,14 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
-    // Skip the initial intersection report that fires on observe()
+    // Always skip the synthetic first callback that fires on observe()
     let isFirstCallback = true;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (isFirstCallback) {
           isFirstCallback = false;
-          if (!entries[0].isIntersecting) return;
+          return;
         }
         if (entries[0].isIntersecting && !isLoadingMoreRef.current) {
           if (onLoadMoreRef.current) void onLoadMoreRef.current();
@@ -340,14 +371,16 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [chatId, hasMore, onLoadMore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoadMore captured via onLoadMoreRef
+  }, [chatId, hasMore]);
 
   // Memoize filtered and sorted messages to avoid re-computing on every render
   const visibleMessages = useMemo(() => {
-    const filtered = messages.filter(msg =>
-      // Skip empty assistant messages (streaming placeholders)
-      // BUT keep tool progress messages even if they have empty content
-      msg.role !== "assistant" || msg.content.trim() || msg.tool_progress
+    const filtered = messages.filter(
+      (msg) =>
+        // Skip empty assistant messages (streaming placeholders)
+        // BUT keep tool progress messages even if they have empty content
+        msg.role !== "assistant" || msg.content.trim() || msg.tool_progress,
     );
 
     // Sort messages based on sortOrder prop
@@ -374,7 +407,10 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   }, [visibleMessages]);
 
   return (
-    <div data-chat-scroll className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
+    <div
+      data-chat-scroll
+      className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0"
+    >
       {/* Chat ID Display - Debug info */}
       {chatId && (
         <div className="flex justify-center mb-2">
@@ -431,7 +467,9 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
           <div className="w-full bg-white text-gray-900 px-4 py-3 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex items-center gap-3">
               <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-              <span className="text-sm font-medium">{t('chat:message.analyzing')}</span>
+              <span className="text-sm font-medium">
+                {t("chat:message.analyzing")}
+              </span>
             </div>
           </div>
         </div>

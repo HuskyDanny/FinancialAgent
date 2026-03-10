@@ -59,10 +59,10 @@ export function parseBackendMessage(msg: BackendMessage): ChatMessage {
  * Iterates backward to find the most recent message with deep_events,
  * replays all events, and returns true if any actions were dispatched.
  */
-export function replayDeepEvents(
+export function replayDeepEvents<A>(
   messages: ChatMessage[],
-  mapEventToAction: (event: DeepStreamEvent) => unknown | null,
-  dispatch: (action: unknown) => void,
+  mapEventToAction: (event: DeepStreamEvent) => A | null,
+  dispatch: (action: A) => void,
 ): boolean {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];

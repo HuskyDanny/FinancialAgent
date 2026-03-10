@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.7] - 2026-03-10
+
+### Added
+- Fix infinite scroll observer thrashing, type safety, and stale DOM ref
+
+
 ## [0.11.5] - 2025-12-29
 
 ### Fixed
