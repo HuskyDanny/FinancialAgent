@@ -6,6 +6,7 @@ web search results useful for finding lawsuits, regulatory actions,
 analyst reports, and other context that financial APIs miss.
 """
 
+import asyncio
 import json
 
 import structlog
@@ -40,7 +41,9 @@ def create_exa_tools(api_key: str) -> list:
             JSON string with search results including titles, URLs, and content
         """
         try:
-            response = client.search_and_contents(
+            # Exa client is synchronous — run in thread to avoid blocking event loop
+            response = await asyncio.to_thread(
+                client.search_and_contents,
                 query,
                 num_results=5,
                 text={"max_characters": 500},

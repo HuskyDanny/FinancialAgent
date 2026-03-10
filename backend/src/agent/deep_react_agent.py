@@ -64,9 +64,9 @@ class AnalysisState(TypedDict, total=False):
     research_report: str
     # Whether debate loop is active
     debate_active: bool
-    # Structured debate exchange (accumulated across rounds)
-    all_concerns: list  # Concern dicts from debater
-    all_rebuttals: list  # Rebuttal dicts from defender
+    # Structured debate exchange (auto-accumulated via operator.add reducer)
+    all_concerns: Annotated[list, operator.add]  # Concern dicts from debater
+    all_rebuttals: Annotated[list, operator.add]  # Rebuttal dicts from defender
 
 
 class DeepReActAgent:
@@ -186,8 +186,6 @@ class DeepReActAgent:
             """
             symbol = state.get("symbol", context.symbol)
             round_count = state.get("round_count", 0)
-            all_concerns = state.get("all_concerns", [])
-            all_rebuttals = state.get("all_rebuttals", [])
             configurable = config.get("configurable", {})
 
             if round_count == 0:
@@ -229,8 +227,9 @@ class DeepReActAgent:
                     )
                     reports[subagent_key] = report
 
-                # Signals sub-agents done, moving to debate
-                if emitter:
+                # Only emit synthesis_start when debate is disabled (straight to END).
+                # When debate IS enabled, verdict_node emits synthesis_start instead.
+                if emitter and not self.enable_debate:
                     _emit(emitter.synthesis_start())
 
                 combined_report = f"""## Technical Analysis
@@ -252,11 +251,15 @@ class DeepReActAgent:
                     "messages": [AIMessage(content=combined_report, name="Researcher")],
                     "research_report": combined_report,
                     "round_count": round_count,
-                    "all_concerns": all_concerns,
-                    "all_rebuttals": all_rebuttals,
+                    # Empty lists — operator.add reducer accumulates automatically
+                    "all_concerns": [],
+                    "all_rebuttals": [],
                 }
 
             # ── REBUTTAL PHASE ──
+            # Read accumulated concerns from state (populated by operator.add reducer)
+            all_concerns = state.get("all_concerns", [])
+
             logger.info(
                 "Starting rebuttal phase",
                 round=round_count,
@@ -365,8 +368,9 @@ Be concise — focus on DATA, not rhetoric."""
                 "messages": [AIMessage(content=combined_defense, name="Defender")],
                 "research_report": updated_report,
                 "round_count": round_count,
-                "all_concerns": all_concerns,
-                "all_rebuttals": all_rebuttals + new_rebuttals,
+                # Only return NEW items — operator.add reducer handles accumulation
+                "all_concerns": [],
+                "all_rebuttals": new_rebuttals,
             }
 
         # ── debate_node ──────────────────────────────────────────────────
@@ -378,8 +382,6 @@ Be concise — focus on DATA, not rhetoric."""
             """
             report = state.get("research_report", "")
             round_count = state.get("round_count", 0)
-            all_concerns = state.get("all_concerns", [])
-            all_rebuttals = state.get("all_rebuttals", [])
             configurable = config.get("configurable", {})
 
             logger.info(
@@ -391,9 +393,17 @@ Be concise — focus on DATA, not rhetoric."""
             if emitter:
                 _emit(emitter.debate_start(round_count + 1, self.max_debate_rounds))
 
+            # Truncate at sentence boundary to avoid cutting mid-word/mid-JSON
+            max_len = 3000
+            truncated_report = report[:max_len]
+            if len(report) > max_len:
+                last_period = truncated_report.rfind(".")
+                if last_period > max_len // 2:
+                    truncated_report = truncated_report[: last_period + 1]
+
             critique_prompt = f"""Review the following investment thesis and challenge it:
 
-{report[:3000]}
+{truncated_report}
 
 Your job is to:
 1. Use your fact-checking skills to verify key claims
@@ -451,8 +461,9 @@ If after thorough review you genuinely have no concerns, respond with:
                 "messages": [AIMessage(content=critique, name="Debater")],
                 "round_count": new_round,
                 "research_report": report,
-                "all_concerns": all_concerns + new_concerns,
-                "all_rebuttals": all_rebuttals,
+                # Only return NEW concerns — operator.add reducer handles accumulation
+                "all_concerns": new_concerns,
+                "all_rebuttals": [],
                 "debate_active": not debater_output.terminated,
             }
 
@@ -569,12 +580,15 @@ Be decisive. Use the evidence from both sides. Do not hedge excessively."""
                 "messages": [AIMessage(content=verdict_text, name="Judge")],
                 "research_report": verdict_text,  # Becomes final_answer via adapter
                 "round_count": round_count,
-                "all_concerns": all_concerns,
-                "all_rebuttals": all_rebuttals,
+                # Empty — no new items; operator.add preserves accumulated state
+                "all_concerns": [],
+                "all_rebuttals": [],
             }
 
         # ── Graph Assembly ───────────────────────────────────────────────
-        builder = StateGraph(dict)
+        # Must use AnalysisState (not dict) so Annotated reducers are active.
+        # operator.add on messages/all_concerns/all_rebuttals requires this.
+        builder = StateGraph(AnalysisState)
         builder.add_node("main_agent", main_agent_node)
 
         if self.enable_debate:

@@ -6,6 +6,7 @@ Alpha Vantage API used by research sub-agents. This ensures
 genuine cross-verification in the debate.
 """
 
+import asyncio
 import json
 
 import structlog
@@ -32,8 +33,10 @@ def create_yfinance_tools() -> list:
         Returns:
             JSON string with news headlines and key financial stats
         """
-        try:
-            ticker = yf.Ticker(symbol)
+
+        def _fetch_sync(sym: str) -> dict:
+            """Synchronous yfinance fetch — runs in thread pool."""
+            ticker = yf.Ticker(sym)
             raw_news = ticker.news or []
             info = ticker.info or {}
 
@@ -59,9 +62,12 @@ def create_yfinance_tools() -> list:
                 "earnings_growth": info.get("earningsGrowth"),
             }
 
-            return json.dumps(
-                {"source": "yahoo_finance", "news": news, "key_stats": key_stats}
-            )
+            return {"source": "yahoo_finance", "news": news, "key_stats": key_stats}
+
+        try:
+            # yfinance is synchronous — run in thread to avoid blocking event loop
+            data = await asyncio.to_thread(_fetch_sync, symbol)
+            return json.dumps(data)
         except Exception as e:
             logger.warning("yfinance fetch failed", symbol=symbol, error=str(e))
             return json.dumps({"source": "yahoo_finance", "error": str(e)})
