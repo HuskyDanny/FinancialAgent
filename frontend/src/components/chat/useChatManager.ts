@@ -13,28 +13,23 @@ import type { ChatMessage } from "../../types/api";
 export const useChatManager = () => {
   const { t, i18n } = useTranslation("chat");
 
-  const createWelcomeMessage = useCallback((): ChatMessage => ({
-    role: "assistant",
-    content: `${t("welcome.title")}
+  const createWelcomeMessage = useCallback(
+    (): ChatMessage => ({
+      role: "assistant",
+      content: `${t("welcome.title")}\n\n${t("welcome.subtitle")}\n\n${t("welcome.hint")}`,
+      timestamp: new Date().toISOString(),
+    }),
+    [t],
+  );
 
-${t("welcome.firstTime")}
-${t("welcome.firstTimeHint")}
-
-${t("welcome.modesTitle")}
-${t("welcome.agentMode")}
-${t("welcome.copilotMode")}
-${t("welcome.portfolioMode")}
-
-💡 ${t("welcome.proTip")}`,
-    timestamp: new Date().toISOString(),
-  }), [t]);
-
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [createWelcomeMessage()]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    createWelcomeMessage(),
+  ]);
   const [chatId, setChatId] = useState<string | null>(null);
 
   // Update welcome message when language changes (only if it's the only message)
   useEffect(() => {
-    setMessages(prev => {
+    setMessages((prev) => {
       // Only update if there's just the welcome message (no chat history)
       if (prev.length === 1 && prev[0].role === "assistant") {
         return [createWelcomeMessage()];
