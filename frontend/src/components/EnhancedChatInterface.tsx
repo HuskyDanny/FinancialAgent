@@ -48,7 +48,7 @@ export function EnhancedChatInterface() {
   });
 
   // Agent mode: v3 = Agent (auto tools), v2 = Copilot (manual tools), v4-deep = Deep analysis
-  const [agentMode, setAgentMode] = useState<"v2" | "v3" | "v4-deep">("v3");
+  const [agentMode, setAgentMode] = useState<"v2" | "v3" | "v4-deep">("v4-deep");
 
   // Deep agent accordion state (active when agentMode === "v4-deep")
   const { state: deepState, dispatch: deepDispatch } = useDeepAccordionState();
@@ -312,7 +312,7 @@ export function EnhancedChatInterface() {
     setDateRangeEnd("");
     setHasMoreMessages(false); // Reset pagination
     deepDispatch({ type: "RESET" }); // Reset deep accordion state
-    setAgentMode("v3"); // Reset to default agent mode
+    setAgentMode("v4-deep"); // Reset to default agent mode
   }, [setMessages, setChatId, deepDispatch]);
 
   const handleLoadMore = useCallback(async () => {
@@ -464,79 +464,6 @@ export function EnhancedChatInterface() {
                   deepAccordion={deepAccordionElement}
                 />
 
-                {/* Agent Mode Toggle - Only enabled when starting new chat */}
-                <div className="flex-shrink-0 px-4 py-2 border-t border-gray-100 bg-gray-50/50">
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-600 font-medium">
-                      {t("chat:mode.label")}:
-                    </span>
-                    <button
-                      onClick={() => setAgentMode("v3")}
-                      disabled={!!chatId}
-                      className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-                        agentMode === "v3"
-                          ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md"
-                          : "bg-white text-gray-700 hover:bg-gray-100"
-                      } ${
-                        chatId
-                          ? "opacity-50 cursor-not-allowed"
-                          : "cursor-pointer"
-                      }`}
-                      title={
-                        chatId
-                          ? t("chat:mode.locked")
-                          : t("chat:mode.agentDescription")
-                      }
-                    >
-                      🤖 {t("chat:mode.agent")}
-                    </button>
-                    <button
-                      onClick={() => setAgentMode("v2")}
-                      disabled={!!chatId}
-                      className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-                        agentMode === "v2"
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md"
-                          : "bg-white text-gray-700 hover:bg-gray-100"
-                      } ${
-                        chatId
-                          ? "opacity-50 cursor-not-allowed"
-                          : "cursor-pointer"
-                      }`}
-                      title={
-                        chatId
-                          ? t("chat:mode.locked")
-                          : t("chat:mode.copilotDescription")
-                      }
-                    >
-                      👤 {t("chat:mode.copilot")}
-                    </button>
-                    <button
-                      onClick={() => setAgentMode("v4-deep")}
-                      disabled={!!chatId}
-                      className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-                        agentMode === "v4-deep"
-                          ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md"
-                          : "bg-white text-gray-700 hover:bg-gray-100"
-                      } ${
-                        chatId
-                          ? "opacity-50 cursor-not-allowed"
-                          : "cursor-pointer"
-                      }`}
-                      title={
-                        chatId
-                          ? t("chat:mode.locked")
-                          : t("chat:mode.deepDescription")
-                      }
-                    >
-                      🔬 {t("chat:mode.deep")}
-                    </button>
-                    {chatId && (
-                      <span className="ml-auto text-xs text-gray-500 italic">
-                        {t("chat:mode.locked")}
-                      </span>
-                    )}
-                  </div>
-                </div>
 
                 <ChatInput
                   message={message}

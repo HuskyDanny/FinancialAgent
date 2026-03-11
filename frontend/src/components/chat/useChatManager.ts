@@ -17,13 +17,7 @@ export const useChatManager = () => {
     role: "assistant",
     content: `${t("welcome.title")}
 
-${t("welcome.firstTime")}
-${t("welcome.firstTimeHint")}
-
-${t("welcome.modesTitle")}
-${t("welcome.agentMode")}
-${t("welcome.copilotMode")}
-${t("welcome.portfolioMode")}
+${t("welcome.description")}
 
 💡 ${t("welcome.proTip")}`,
     timestamp: new Date().toISOString(),
