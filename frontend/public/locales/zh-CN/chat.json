@@ -162,16 +162,6 @@
     "creditsUnit": "额度",
     "lowBalanceWarning": "余额不足 - 请及时充值"
   },
-  "mode": {
-    "label": "模式",
-    "agent": "代理",
-    "copilot": "助手",
-    "deep": "深度分析",
-    "locked": "此对话模式已锁定",
-    "agentDescription": "代理模式（自动调用工具）",
-    "copilotDescription": "助手模式（手动工具）",
-    "deepDescription": "深度分析模式（多智能体+辩论验证）"
-  },
   "mobile": {
     "hideSidebar": "← 隐藏",
     "showChats": "← 对话",
@@ -234,14 +224,9 @@
     "statusFailed": "失败"
   },
   "welcome": {
-    "title": "🎯 欢迎使用金融智能助手！",
-    "firstTime": "✨ **首次使用？**",
-    "firstTimeHint": "点击左下角的 **❓** 按钮查看快速交互指南！",
-    "modesTitle": "🚀 **三种强大模式供您探索：**",
-    "agentMode": "🤖 **代理模式** — 让AI自动分析并提供洞察",
-    "copilotMode": "💬 **助手模式** — 您来控制，AI来指导",
-    "portfolioMode": "📊 **投资组合追踪** — 监控您的投资表现",
-    "proTip": "💡 **小贴士：** 输入问题或搜索股票代码，即可体验神奇效果！"
+    "title": "Welcome to Financial Agent",
+    "subtitle": "Ask any question about stocks, markets, or your portfolio. The agent will automatically research and analyze using multiple sources.",
+    "hint": "Try searching for a stock symbol on the right, or just ask a question below to get started."
   },
   "help": {
     "title": "如何使用金融智能助手",
@@ -257,30 +242,6 @@
       "step3Desc": "市场数据、新闻等",
       "step4": "4. 获取洞察",
       "step4Desc": "建议和总结"
-    },
-    "copilotMode": {
-      "title": "💬 助手模式",
-      "subtitle": "AI指导下的手动探索",
-      "description": "您通过点击按钮触发特定分析和查看图表来控制分析过程。AI帮助您理解结果并提供上下文。",
-      "step1": "1. 点击分析",
-      "step1Desc": "选择工具按钮",
-      "step2": "2. 查看图表",
-      "step2Desc": "可视化数据展示",
-      "step3": "3. AI解释",
-      "step3Desc": "上下文和洞察"
-    },
-    "portfolioAgent": {
-      "title": "📊 投资组合代理",
-      "subtitle": "追踪模拟交易表现",
-      "description": "前往投资组合页面查看您的模拟持仓、交易历史和盈亏表现。代理模拟真实交易场景。",
-      "step1": "前往投资组合标签",
-      "step1Desc": "点击顶部导航中的「投资组合」",
-      "step2": "查看持仓仪表板",
-      "step2Desc": "查看当前持仓和配置",
-      "step3": "检查交易历史",
-      "step3Desc": "查看买卖交易记录",
-      "step4": "分析盈亏表现",
-      "step4Desc": "追踪一段时间内的收益和损失"
     },
     "footer": "需要更多帮助？请联系支持或查看我们的文档"
   }
