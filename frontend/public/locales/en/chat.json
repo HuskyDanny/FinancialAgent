@@ -234,14 +234,9 @@
     "statusFailed": "Failed"
   },
   "welcome": {
-    "title": "🎯 Welcome to Financial Agent!",
-    "firstTime": "✨ **First Time Here?**",
-    "firstTimeHint": "Click the **❓** button in the bottom-right corner for a quick interactive guide!",
-    "modesTitle": "🚀 **Three Powerful Modes to Explore:**",
-    "agentMode": "🤖 **Agent Mode** — Let AI automatically analyze and provide insights",
-    "copilotMode": "💬 **Copilot Mode** — You control, AI guides",
-    "portfolioMode": "📊 **Portfolio Tracking** — Monitor your investment performance",
-    "proTip": "💡 **Pro Tip:** Start by asking a question or searching for a stock symbol to see the magic happen!"
+    "title": "Welcome to Financial Agent",
+    "description": "Ask any question about stocks, markets, or your portfolio. Our deep analysis engine will research multiple sources, verify findings through debate, and deliver comprehensive insights.",
+    "proTip": "Try asking: \"Analyze NVDA\" or \"What are the risks of investing in Tesla?\""
   },
   "help": {
     "title": "How to Use Financial Agent",
