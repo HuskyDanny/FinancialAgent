@@ -92,6 +92,11 @@ export function EnhancedChatInterface() {
 
   const { messages, setMessages, chatId, setChatId } = useChatManager();
 
+  // Ref for messages.length — avoids stale closure in handleLoadMore without
+  // adding messages.length to its dependency array (which causes observer thrashing)
+  const messagesLengthRef = useRef(0);
+  messagesLengthRef.current = messages.length;
+
   // Chat restoration hook
   const { restoreChat } = useChatRestoration({
     setMessages,
@@ -285,7 +290,7 @@ export function EnhancedChatInterface() {
         deepDispatch({ type: "RESET" });
 
         const restoredMessages = await restoreChat(chatId);
-        setHasMoreMessages(true);
+        setHasMoreMessages((restoredMessages?.length ?? 0) >= 50);
 
         // Replay deep events from the most recent deep analysis message
         if (restoredMessages) {
@@ -326,7 +331,7 @@ export function EnhancedChatInterface() {
 
     try {
       const { chatService } = await import("../services/api");
-      const currentOffset = messages.length;
+      const currentOffset = messagesLengthRef.current;
       const chatDetail = await chatService.getChatDetail(
         chatId,
         50,
@@ -359,7 +364,7 @@ export function EnhancedChatInterface() {
       // Restore scroll position AFTER React renders new messages (double rAF ensures DOM flush)
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (scrollContainer) {
+          if (scrollContainer?.isConnected) {
             const newScrollHeight = scrollContainer.scrollHeight;
             scrollContainer.scrollTop += newScrollHeight - prevScrollHeight;
           }
@@ -370,14 +375,7 @@ export function EnhancedChatInterface() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [
-    chatId,
-    messages.length,
-    isLoadingMore,
-    setMessages,
-    deepDispatch,
-    deepState.status,
-  ]);
+  }, [chatId, isLoadingMore, setMessages, deepDispatch, deepState.status]);
 
   return (
     <div className="bg-white overflow-hidden max-h-screen">

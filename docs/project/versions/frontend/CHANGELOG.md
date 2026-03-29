@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.7] - 2026-03-10
+
+### Fixed
+- fix(chat): eliminate IntersectionObserver thrashing on every streaming message
+- fix(chat): add isConnected guard on scroll container in rAF callback
+- fix(chat): set hasMoreMessages based on restored count (>= 50)
+- fix(chat): always skip first IntersectionObserver callback to prevent double-load
+- fix(types): add generic type parameter to replayDeepEvents for type safety
+
+## [0.11.6] - 2026-03-04
+
+### Added
+- feat(chat): infinite scroll for chat message history
+- feat(chat): deep agent accordion state persistence on chat restore
+- refactor(utils): extract parseBackendMessage and replayDeepEvents to messageParser.ts
+
 ## [0.11.5] - 2025-12-29
 
 ### Fixed
